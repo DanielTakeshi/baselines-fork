@@ -257,7 +257,7 @@ def learn(network, env,
     if USE_KERAS:
         obs_shape = env.observation_space.shape
     else:
-        obs_shape = (100,100,3)
+        obs_shape = (100,100,4)
 
     memory = Memory(limit=int(rb_size),
                     action_shape=env.action_space.shape,
