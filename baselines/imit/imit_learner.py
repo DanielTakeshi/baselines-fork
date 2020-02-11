@@ -164,7 +164,7 @@ class IMIT(object):
                 resized = cv2.resize(obs[b], (self.obs_shape[0], self.obs_shape[1]))
                 obs_new.append(resized)
             obs_new = np.array(obs_new)
-            assert obs_new.shape == (obs.shape[0], self.obs_shape[0], self.obs_shape[1], 3)
+            assert obs_new.shape == (obs.shape[0], self.obs_shape[0], self.obs_shape[1], 4)
             obs = obs_new
 
         actor_tf = self.actor_tf
