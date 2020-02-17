@@ -381,6 +381,7 @@ def main(args):
                         pstats['oob'].append(epinfo[d]['out_of_bounds'])
                         pstats['s_c'].append(epinfo[d]['start_coverage'])
                         pstats['s_iv'].append(epinfo[d]['start_variance_inv'])
+                        pstats['nsteps'].append(epinfo[d]['num_steps'])
                         episode_rews[d] = 0
                 nb_epis = len(pstats['r'])
                 logger.info('\nStats only for {} completed episodes:'.format(nb_epis))
@@ -388,6 +389,8 @@ def main(args):
                         np.mean(pstats['r']), np.std(pstats['r'])))
                 logger.info('rewards max/min/median: {:.3f}, {:.3f}, {:.3f}'.format(
                         np.max(pstats['r']), np.min(pstats['r']), np.median(pstats['r'])))
+                logger.info('Num steps : {:.3f} +/- {:.1f}'.format(
+                        np.mean(pstats['nsteps']), np.std(pstats['nsteps'])))
                 logger.info('Start inv-var:  {:.3f} +/- {:.1f}'.format(
                         np.mean(pstats['s_iv']), np.std(pstats['s_iv'])))
                 logger.info('Final inv-var:  {:.3f} +/- {:.1f}'.format(
