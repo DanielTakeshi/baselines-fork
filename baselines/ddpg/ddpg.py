@@ -82,6 +82,11 @@ def _ddpg_demos(demos_path, agent, memory, algo='DDPG', lim_exp_samples=10000):
         act = np.minimum(act,  1.)
         # Store them in the replay buffer. If IMIT, only need obs and act.
         if algo == 'IMIT':
+            print('WARNING: assuming RGB only')
+            #print(obs0.shape)
+            obs0 = obs0[:,:,:,:3]
+            #print(obs0.shape)
+            #sys.exit()
             agent.store_transition(obs0, act, is_teacher=True)
         else:
             agent.store_transition(obs0, act, rew, obs1, terminal1=done, is_teacher=True)
