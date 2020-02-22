@@ -44,10 +44,10 @@ from os.path import join
 from collections import defaultdict
 
 # matplotlib
-titlesize = 40
-xsize = 40
-ysize = 40
-ticksize = 38
+titlesize = 45
+xsize = 45
+ysize = 45
+ticksize = 40
 legendsize = 38
 er_alpha = 0.25
 bar_width = 0.3
@@ -55,7 +55,8 @@ bar_alpha = 0.9
 lw = 7
 EPS = 0.02
 COLOR_RGB = 'red'
-COLOR_DEP = 'blue'
+COLOR_DEP = 'black'
+COLOR_RGBD = 'blue'
 
 
 def _get_tier(files):
@@ -120,7 +121,7 @@ def _debug(stats_bc, stats_d):
         print('  {}, {:.2f}, {:.2f}, {:.2f}'.format(chk, s_c, c, success))
 
 
-def plot(files, all_rollout_data, rows_cols, success_thresh=0.92):
+def plot(files, all_rollout_data, rows_cols, labels_type, success_thresh=0.92):
     """Plot rollout data, like other code except wrapping another list.
 
     all_rollout_data is a list where each item is a batch of rollout data (as
@@ -135,17 +136,16 @@ def plot(files, all_rollout_data, rows_cols, success_thresh=0.92):
     # keys to the gridspec_kw is tricky with tight_layout.
     nrows, ncols = 3, 2
     fig, ax = plt.subplots(nrows, ncols, squeeze=False, sharey='row',
-                           figsize=(11*ncols, 6*nrows),
-                           gridspec_kw={'width_ratios':[1,1.45]})
+                           figsize=(11*ncols, 8*nrows),
+                           gridspec_kw={'width_ratios':[1.0,1.40]})
 
-    for idx, (file, agent_history, row_col) in enumerate(
-                zip(files, all_rollout_data, rows_cols)):
-        # Key assumption.
-        is_rgb = idx < len(files) / 2
+    for idx, (file, agent_history, row_col, category) in enumerate(
+                zip(files, all_rollout_data, rows_cols, labels_type)):
+        # Note that `category` is either: RGB, D, or RGBD.
 
         # Actually we ignore the column here.
         rr, _ = row_col
-        print('\nAt ({},{}), inspecting file {}, is RGB? {}'.format(rr,0,file,is_rgb))
+        print('\nAt ({},{}), inspecting file {}, type: {}'.format(rr, 0, file, category))
         if len(agent_history) == 0:
             print('Agent has no history, skipping...')
             continue
@@ -229,12 +229,19 @@ def plot(files, all_rollout_data, rows_cols, success_thresh=0.92):
         x_bc = _get_xcoords(stats_bc['chkpt'])
         x_d = _get_xcoords(stats_d['chkpt'])
         maxval_learner = max( np.max(stats_bc['c_mean']), np.max(stats_d['c_mean']) )
-        if is_rgb:
-            pol_label = 'Color (max: {:.1f})'.format(maxval_learner)
+
+        if category == 'RGB':
+            pol_label = 'RGB (max: {:.1f})'.format(maxval_learner)
             pol_color = COLOR_RGB
-        else:
-            pol_label = 'Depth (max: {:.1f})'.format(maxval_learner)
+        elif category == 'D':
+            pol_label = 'D (max: {:.1f})'.format(maxval_learner)
             pol_color = COLOR_DEP
+        elif category == 'RGBD':
+            pol_label = 'RGBD (max: {:.1f})'.format(maxval_learner)
+            pol_color = COLOR_RGBD
+        else:
+            raise ValueError(category)
+
         ax[rr,0].plot(x_bc, stats_bc['c_mean'], lw=lw, marker='x', ms=18, mew=5,
                 color=pol_color)
         ax[rr,1].plot(x_d, stats_d['c_mean'], lw=lw, marker='x', ms=18, mew=5,
@@ -248,8 +255,8 @@ def plot(files, all_rollout_data, rows_cols, success_thresh=0.92):
                 stats_d['c_mean'] + stats_d['c_std'],
                 alpha=er_alpha)
 
-        # Only need this for one of RGB or depth. Note: no need to multiply by 100.
-        if is_rgb:
+        # Only need this for one of RGB or depth (or RBD). Note: no need to multiply by 100.
+        if category == 'RGB':
             avg_start = np.mean(stats_bc['s_c_mean'])
             ax[rr,0].axhline(y=avg_start, ls='--', lw=5, color='gray',
                     label='Start: {:.1f}'.format(avg_start))
@@ -262,6 +269,7 @@ def plot(files, all_rollout_data, rows_cols, success_thresh=0.92):
         # Bells and whistles
         for r in range(nrows):
             for c in range(ncols):
+                # I tried two clumns but hard to read ...
                 leg = ax[r,c].legend(loc="best", ncol=1, prop={'size':legendsize})
                 for legobj in leg.legendHandles:
                     legobj.set_linewidth(5.0)
@@ -273,7 +281,7 @@ def plot(files, all_rollout_data, rows_cols, success_thresh=0.92):
                 #ax[r,c].xaxis.set_tick_params(which='both', labelbottom=True)
 
     plt.tight_layout()
-    figname = 'fig_rollout_combo_v01.png'.format()
+    figname = 'fig_rollout_combo_v02.png'.format()
     plt.savefig(figname)
     print("Just saved: {}\n".format(figname))
 
@@ -282,23 +290,24 @@ if __name__ == "__main__":
     # a,b,c = tiers 1,2,3
     # rollouts_4 from rgb images
     # rollouts_6 from depth images
+    # rollouts_5 from RGBD images (yes, forgive me for going out of order).
     # for simplicity please put in: color t1, color t2, color t3
     #                         then: depth t1, depth t2, depth t3
+    #                         then: rgbd  t1, rgbd  t2, rgbd  t3
     # I assume later that it's ordered as: half color, half depth.
+    # UPDATE: actually I used to use that for the sake of labeling things. But
+    # just add the info here to preserve our sanity.
     HEAD = '/nfs/diskstation/seita/clothsim'
     FILES = [
-        #join(HEAD,'rollouts_4.4.0a'),
-        #join(HEAD,'rollouts_4.4.0b'), # I didn't run this experimental setting
-        #join(HEAD,'rollouts_4.4.0c'),
-        join(HEAD,'rollouts_4.5.0a'),
+        join(HEAD,'rollouts_4.5.0a'), # color
         join(HEAD,'rollouts_4.5.0b'),
         join(HEAD,'rollouts_4.5.0c'),
-        #join(HEAD,'rollouts_6.1.0a'),
-        #join(HEAD,'rollouts_6.1.0b'),
-        #join(HEAD,'rollouts_6.1.0c'),
-        join(HEAD,'rollouts_6.2.0a'),
+        join(HEAD,'rollouts_6.2.0a'), # depth
         join(HEAD,'rollouts_6.2.0b'),
         join(HEAD,'rollouts_6.2.0c'),
+        join(HEAD,'rollouts_5.0.0a'), # rgbd
+        join(HEAD,'rollouts_5.0.0b'),
+        join(HEAD,'rollouts_5.0.0c'),
     ]
     # The rows/cols of files above, make sure they match.
     ROW_COL = [
@@ -308,6 +317,20 @@ if __name__ == "__main__":
         (0,0),
         (1,0),
         (2,0),
+        (0,0),
+        (1,0),
+        (2,0),
+    ]
+    LABELS_TYPE = [
+        'RGB',
+        'RGB',
+        'RGB',
+        'D',
+        'D',
+        'D',
+        'RGBD',
+        'RGBD',
+        'RGBD',
     ]
     ALL_ROLLOUT_DATA = []
 
@@ -336,4 +359,4 @@ if __name__ == "__main__":
         ALL_ROLLOUT_DATA.append(rollout_data)
 
     assert len(FILES) == len(ALL_ROLLOUT_DATA) == len(ROW_COL)
-    plot(FILES, ALL_ROLLOUT_DATA, ROW_COL)
+    plot(FILES, ALL_ROLLOUT_DATA, ROW_COL, LABELS_TYPE)
